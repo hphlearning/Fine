@@ -54,6 +54,8 @@
             btnHelp = new Button();
             btnSingleMatch = new Button();
             btnBatchOcrMatch = new Button();
+            lblViolationType = new Label();
+            cboViolationType = new ComboBox();
             timer1 = new System.Windows.Forms.Timer(components);
             groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)picPreview).BeginInit();
@@ -194,9 +196,9 @@
             // 
             picPreview.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
             picPreview.BorderStyle = BorderStyle.FixedSingle;
-            picPreview.Location = new Point(-3, 127);
+            picPreview.Location = new Point(-3, 170);
             picPreview.Name = "picPreview";
-            picPreview.Size = new Size(696, 732);
+            picPreview.Size = new Size(696, 690);
             picPreview.SizeMode = PictureBoxSizeMode.Zoom;
             picPreview.TabIndex = 12;
             picPreview.TabStop = false;
@@ -292,6 +294,23 @@
             btnBatchOcrMatch.UseVisualStyleBackColor = true;
             btnBatchOcrMatch.Click += btnBatchOcrMatch_Click;
             // 
+            // lblViolationType
+            // 
+            lblViolationType.AutoSize = true;
+            lblViolationType.Location = new Point(39, 135);
+            lblViolationType.Name = "lblViolationType";
+            lblViolationType.Size = new Size(100, 24);
+            lblViolationType.TabIndex = 22;
+            lblViolationType.Text = "违规类型：";
+            // 
+            // cboViolationType
+            // 
+            cboViolationType.DropDownStyle = ComboBoxStyle.DropDownList;
+            cboViolationType.Location = new Point(169, 131);
+            cboViolationType.Name = "cboViolationType";
+            cboViolationType.Size = new Size(243, 32);
+            cboViolationType.TabIndex = 23;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(11F, 24F);
@@ -299,6 +318,8 @@
             AutoSize = true;
             ClientSize = new Size(1149, 860);
             Controls.Add(btnBatchOcrMatch);
+            Controls.Add(cboViolationType);
+            Controls.Add(lblViolationType);
             Controls.Add(btnSingleMatch);
             Controls.Add(btnHelp);
             Controls.Add(btnMatchExternal);
@@ -355,5 +376,7 @@
         private Button btnHelp;
         private Button btnSingleMatch;
         private Button btnBatchOcrMatch;
+        private Label lblViolationType;
+        private ComboBox cboViolationType;
     }
 }

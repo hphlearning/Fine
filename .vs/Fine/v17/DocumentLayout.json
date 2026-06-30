@@ -3,12 +3,16 @@
   "WorkspaceRootPath": "D:\\code\\Project\\Fine\\Fine\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{BD6AF3D4-499D-4937-87DF-8DD515512BAA}|Fine\\Fine.csproj|d:\\code\\project\\fine\\fine\\fine\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "RelativeMoniker": "D:0:0:{BD6AF3D4-499D-4937-87DF-8DD515512BAA}|Fine\\Fine.csproj|solutionrelative:fine\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{BD6AF3D4-499D-4937-87DF-8DD515512BAA}|Fine\\Fine.csproj|d:\\code\\project\\fine\\fine\\fine\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{BD6AF3D4-499D-4937-87DF-8DD515512BAA}|Fine\\Fine.csproj|solutionrelative:fine\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{BD6AF3D4-499D-4937-87DF-8DD515512BAA}|Fine\\Fine.csproj|D:\\code\\Project\\Fine\\Fine\\fine\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
-      "RelativeMoniker": "D:0:0:{BD6AF3D4-499D-4937-87DF-8DD515512BAA}|Fine\\Fine.csproj|solutionrelative:fine\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+      "AbsoluteMoniker": "D:0:0:{BD6AF3D4-499D-4937-87DF-8DD515512BAA}|Fine\\Fine.csproj|D:\\code\\Project\\Fine\\Fine\\fine\\properties\\settings.settings||{6D2695F9-5365-4A78-89ED-F205C045BFE6}",
+      "RelativeMoniker": "D:0:0:{BD6AF3D4-499D-4937-87DF-8DD515512BAA}|Fine\\Fine.csproj|solutionrelative:fine\\properties\\settings.settings||{6D2695F9-5365-4A78-89ED-F205C045BFE6}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{BD6AF3D4-499D-4937-87DF-8DD515512BAA}|Fine\\Fine.csproj|d:\\code\\project\\fine\\fine\\fine\\form1.designer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -17,10 +21,6 @@
     {
       "AbsoluteMoniker": "D:0:0:{BD6AF3D4-499D-4937-87DF-8DD515512BAA}|Fine\\Fine.csproj|d:\\code\\project\\fine\\fine\\fine\\fine.csproj||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|",
       "RelativeMoniker": "D:0:0:{BD6AF3D4-499D-4937-87DF-8DD515512BAA}|Fine\\Fine.csproj|solutionrelative:fine\\fine.csproj||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{BD6AF3D4-499D-4937-87DF-8DD515512BAA}|Fine\\Fine.csproj|D:\\code\\Project\\Fine\\Fine\\fine\\properties\\settings.settings||{6D2695F9-5365-4A78-89ED-F205C045BFE6}",
-      "RelativeMoniker": "D:0:0:{BD6AF3D4-499D-4937-87DF-8DD515512BAA}|Fine\\Fine.csproj|solutionrelative:fine\\properties\\settings.settings||{6D2695F9-5365-4A78-89ED-F205C045BFE6}"
     }
   ],
   "DocumentGroupContainers": [
@@ -30,7 +30,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 3,
+          "SelectedChildIndex": 5,
           "Children": [
             {
               "$type": "Bookmark",
@@ -38,7 +38,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 3,
               "Title": "Form1.Designer.cs",
               "DocumentMoniker": "D:\\code\\Project\\Fine\\Fine\\Fine\\Form1.Designer.cs",
               "RelativeDocumentMoniker": "Fine\\Form1.Designer.cs",
@@ -52,7 +52,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 4,
               "Title": "Fine",
               "DocumentMoniker": "D:\\code\\Project\\Fine\\Fine\\Fine\\Fine.csproj",
               "RelativeDocumentMoniker": "Fine\\Fine.csproj",
@@ -63,20 +63,20 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "Form1.cs",
               "DocumentMoniker": "D:\\code\\Project\\Fine\\Fine\\Fine\\Form1.cs",
               "RelativeDocumentMoniker": "Fine\\Form1.cs",
               "ToolTip": "D:\\code\\Project\\Fine\\Fine\\Fine\\Form1.cs",
               "RelativeToolTip": "Fine\\Form1.cs",
-              "ViewState": "AgIAAOEDAAAAAAAAAAAswPEDAAAcAAAAAAAAAA==",
+              "ViewState": "AgIAAMYAAAAAAAAAAAAawNUAAAAVAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-03-18T03:38:48.512Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 2,
               "Title": "Settings.settings",
               "DocumentMoniker": "D:\\code\\Project\\Fine\\Fine\\Fine\\Properties\\Settings.settings",
               "RelativeDocumentMoniker": "Fine\\Properties\\Settings.settings",
@@ -87,7 +87,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 0,
               "Title": "Form1.cs [\u8BBE\u8BA1]",
               "DocumentMoniker": "D:\\code\\Project\\Fine\\Fine\\Fine\\Form1.cs",
               "RelativeDocumentMoniker": "Fine\\Form1.cs",

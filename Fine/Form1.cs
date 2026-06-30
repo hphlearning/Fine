@@ -40,28 +40,12 @@ namespace Fine
             }
 
             string clipboardText = Clipboard.GetText();
+            var parseResult = OcrParser.Parse(clipboardText);
 
-            // 默认清空
-            txtPlate.Text = "";
-            txtTime.Text = "";
+            txtPlate.Text = parseResult.Plate;
+            txtTime.Text = parseResult.Time;
 
-            // 正则匹配车牌
-            Match plateMatch = Regex.Match(clipboardText, @"(粤[A-Z][A-Z0-9]{4,5})");
-            if (plateMatch.Success)
-            {
-                txtPlate.Text = plateMatch.Groups[1].Value;
-            }
-
-            // 正则匹配时间 (兼容微信识别可能少空格的情况)
-            // 升级版正则匹配：用两个括号 () 分别抓住“日期”和“时间”
-            Match timeMatch = Regex.Match(clipboardText, @"(\d{4}-\d{2}-\d{2})\s?(\d{2}:\d{2}:\d{2})");
-            if (timeMatch.Success)
-            {
-                // 强制在日期和时间中间补上一个空格，完美还原标准格式
-                txtTime.Text = timeMatch.Groups[1].Value + " " + timeMatch.Groups[2].Value;
-            }
-
-            if (string.IsNullOrEmpty(txtPlate.Text) || string.IsNullOrEmpty(txtTime.Text))
+            if (!parseResult.IsFullyExtracted)
             {
                 MessageBox.Show("未能完全提取出车牌或时间，请在左侧文本框手动补充修改！", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
@@ -120,11 +104,16 @@ namespace Fine
         // 核心方法：结合文本框内容 + 剪贴板图片，生成 Word
         private void GenerateTicket()
         {
-            // 1. 基础数据准备
-            string templatePath = Path.Combine(Application.StartupPath, "Template.docx");
+            // 1. 获取当前选中的违规类型
+            ViolationTypeEnum selectedType = (ViolationTypeEnum)cboViolationType.SelectedValue;
+            var typeConfig = ViolationTypeRegistry.GetConfig(selectedType);
+
+            // 2. 基础数据准备
+            string templatePath = TemplateLoader.GetTemplatePath(selectedType, Application.StartupPath);
+            if (string.IsNullOrEmpty(templatePath)) return;
+
             string carPlate = txtPlate.Text.Trim();
             string penaltyTime = txtTime.Text.Trim();
-            string seq = txtSeq.Text.Trim();
 
             if (!DateTime.TryParse(penaltyTime, out DateTime alarmDateTime))
             {
@@ -132,26 +121,22 @@ namespace Fine
                 return;
             }
 
-            // 2. 构造单号与路径
-            // 2. 构造单号与路径 (升级版：自动创建每日文件夹)
-            string orderNo = $"CF-{alarmDateTime.ToString("yyyyMMdd")}-{seq}";
-            string fileNameNoExt = $"{orderNo}{carPlate}车辆违规处罚通知单";
-            string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-
-            // 从报警时间里提取出类似 "20260316" 的字符串
+            // 3. 构造单号与路径 (新格式: CF-类型-yyyyMMdd-序号)
             string dateStr = alarmDateTime.ToString("yyyyMMdd");
+            string targetFolderName = $"CF-{dateStr}{typeConfig.FolderSuffix}";
+            string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            string targetFolder = Path.Combine(desktopPath, targetFolderName);
 
-            // 拼出当天的文件夹名字，例如：CF-20260316车辆违规处罚通知单
-            string folderName = $"CF-{dateStr}车辆违规处罚通知单";
-            string targetFolder = Path.Combine(desktopPath, folderName);
-
-            // 如果桌面没有这个日期的文件夹，程序就自动建一个！
             if (!Directory.Exists(targetFolder))
-            {
                 Directory.CreateDirectory(targetFolder);
-            }
 
-            // 最终的保存路径 (把生成的 Word 和 PDF 都放进这个专属文件夹里)
+            // 自动推算序号: 扫描已有文件 + 1
+            int seq = SequenceNumberManager.GetNextSequence(targetFolder, selectedType, dateStr);
+            string seqStr = seq.ToString("D2");
+
+            // 单号: CF-冲红灯-20260630-01
+            string orderNo = $"{typeConfig.OrderPrefix}-{dateStr}-{seqStr}";
+            string fileNameNoExt = $"{orderNo}{carPlate}车辆违规处罚通知单";
             string wordPath = Path.Combine(targetFolder, fileNameNoExt + ".docx");
             string pdfPath = Path.Combine(targetFolder, fileNameNoExt + ".pdf");
 
@@ -160,10 +145,11 @@ namespace Fine
                 // --- 第一步：生成 Word ---
                 using (DocX document = DocX.Load(templatePath))
                 {
-                    document.ReplaceText("{{单号}}", orderNo ?? "");
+                    document.ReplaceText("{{单号}}", orderNo);
                     document.ReplaceText("{{签发日期}}", alarmDateTime.ToString("yyyy年M月d日"));
-                    document.ReplaceText("{{车牌号码}}", carPlate ?? "");
+                    document.ReplaceText("{{车牌号码}}", carPlate);
                     document.ReplaceText("{{违规时间}}", alarmDateTime.ToString("yyyy年M月d日 HH:mm"));
+                    document.ReplaceText("{{违规类型}}", typeConfig.DisplayName);
 
                     // 插入预览框图片
                     if (picPreview.Image != null)
@@ -179,25 +165,24 @@ namespace Fine
                         document.InsertParagraph().AppendPicture(picture);
                     }
 
-                    // 保存 Word 文件
                     document.SaveAs(wordPath);
-                } // 离开这个大括号，Word 文件就会被自动关闭释放
+                }
 
-                // --- 第二步：立即自动转 PDF ---
+                // --- 第二步：自动转 PDF ---
                 Spire.Doc.Document spireDoc = new Spire.Doc.Document();
                 spireDoc.LoadFromFile(wordPath);
                 spireDoc.SaveToFile(pdfPath, Spire.Doc.FileFormat.PDF);
                 spireDoc.Close();
 
-                // 3. 自动化处理：单号结尾自动 +1
-                if (int.TryParse(seq, out int currentNumber))
-                {
-                    txtSeq.Text = (currentNumber + 1).ToString("D2");
-                }
+                // 3. 更新序号显示 (自动推算下一个)
+                txtSeq.Text = (seq + 1).ToString("D2");
 
                 // 4. 汇总提示
-                MessageBox.Show($"处理成功！\n\n已在桌面生成：\n1. Word 存档\n2. PDF 处罚单\n\n单号：{orderNo}",
-                                "全自动处理完成", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(
+                    $"处理成功！\n\n类型：{typeConfig.DisplayName}\n单号：{orderNo}\n\n已在桌面生成：\n1. Word 存档\n2. PDF 处罚单\n\n文件夹：{targetFolderName}",
+                    "全自动处理完成",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
@@ -213,36 +198,32 @@ namespace Fine
 
         private void button2_Click(object sender, EventArgs e)
         {
-            // 1. 创建一个“选择文件”对话框
+            ViolationTypeEnum selectedType = (ViolationTypeEnum)cboViolationType.SelectedValue;
+            var typeConfig = ViolationTypeRegistry.GetConfig(selectedType);
+
+            // 1. 创建一个"选择文件"对话框
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
             {
-                // 设置对话框的标题和过滤条件（只允许选择 .docx 文件）
-                openFileDialog.Title = "请选择你的 Word 模板文件";
+                openFileDialog.Title = $"请选择{typeConfig.DisplayName}类型的Word模板文件";
                 openFileDialog.Filter = "Word 文档 (*.docx)|*.docx";
-                openFileDialog.Multiselect = false; // 不允许一次选多个
+                openFileDialog.Multiselect = false;
 
-                // 2. 如果用户在对话框里点击了“确定”按钮
                 if (openFileDialog.ShowDialog() == DialogResult.OK)
                 {
                     try
                     {
-                        // 获取用户选中的那个文件的完整路径
                         string sourceFilePath = openFileDialog.FileName;
+                        string targetFilePath = Path.Combine(Application.StartupPath, typeConfig.TemplateFileName);
 
-                        // 定义我们要把它复制到的目标路径：即当前程序运行目录下的 Template.docx
-                        string targetFilePath = Path.Combine(Application.StartupPath, "Template.docx");
-
-                        // 3. 执行复制！
-                        // (第三个参数 true 非常关键，意思是如果运行目录里已经有一个旧的 Template.docx 了，就直接覆盖掉它)
                         System.IO.File.Copy(sourceFilePath, targetFilePath, true);
 
-                        // 4. 搞定，弹窗提示
-                        MessageBox.Show("模板导入成功！\n程序现在将使用你最新导入的模板。", "导入成功", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show($"{typeConfig.DisplayName}类型模板导入成功！\n文件名：{typeConfig.TemplateFileName}",
+                            "导入成功", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     catch (Exception ex)
                     {
-                        // 万一因为权限或者文件被占用报错了，捕获错误并提示
-                        MessageBox.Show("导入模板时发生错误: " + ex.Message, "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("导入模板时发生错误: " + ex.Message, "错误",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
             }
@@ -385,14 +366,11 @@ namespace Fine
             // 1. 弹出一个窗口，让你选择今天要通报的那个文件夹
             using (FolderBrowserDialog folderDialog = new FolderBrowserDialog())
             {
-                folderDialog.Description = "请选择你要通报的日期文件夹（例如 CF-20260316车辆违规处罚通知单）";
+                folderDialog.Description = "请选择你要通报的日期+类型文件夹（例如 CF-20260316冲红灯车辆违规处罚通知单）";
 
-                // 如果你选好了文件夹并点击了“确定”
                 if (folderDialog.ShowDialog() == DialogResult.OK)
                 {
                     string folderPath = folderDialog.SelectedPath;
-
-                    // 获取这个文件夹里的所有 PDF 附件（只读PDF，发群里也发PDF）
                     string[] pdfFiles = Directory.GetFiles(folderPath, "*.pdf");
 
                     if (pdfFiles.Length == 0)
@@ -401,66 +379,64 @@ namespace Fine
                         return;
                     }
 
-                    // 2. 从文件夹名字里提取出年月日，比如提取出 2026 03 16
+                    // 2. 从文件夹名字里提取出年月日
                     string folderName = new DirectoryInfo(folderPath).Name;
                     Match dateMatch = Regex.Match(folderName, @"CF-(\d{4})(\d{2})(\d{2})");
                     string displayDate = "某年某月某日";
                     if (dateMatch.Success)
                     {
-                        // 拼装成：2026年3月16日 (去掉月份前面多余的 0)
                         displayDate = $"{dateMatch.Groups[1].Value}年{int.Parse(dateMatch.Groups[2].Value)}月{int.Parse(dateMatch.Groups[3].Value)}日";
                     }
 
-                    // 3. 统计车牌和违规次数（揪出多次违规的“惯犯”）
+                    // 从文件夹名推断违规类型
+                    ViolationTypeEnum detectedType = DetectViolationTypeFromFolderName(folderName);
+                    var typeConfig = ViolationTypeRegistry.GetConfig(detectedType);
+
+                    // 3. 统计车牌和违规次数
                     Dictionary<string, int> plateCounts = new Dictionary<string, int>();
                     foreach (string file in pdfFiles)
                     {
                         string fileName = Path.GetFileNameWithoutExtension(file);
-                        // 用正则从文件名抓取车牌
                         Match plateMatch = Regex.Match(fileName, @"(粤[A-Z][A-Z0-9]{4,5})");
                         if (plateMatch.Success)
                         {
                             string plate = plateMatch.Groups[1].Value;
                             if (plateCounts.ContainsKey(plate))
-                                plateCounts[plate]++; // 违规次数 +1
+                                plateCounts[plate]++;
                             else
-                                plateCounts[plate] = 1; // 第一次记为 1
+                                plateCounts[plate] = 1;
                         }
                     }
 
-                    // 4. 拼装“涉及车辆”这段文字
+                    // 4. 拼装"涉及车辆"文字
                     List<string> carList = new List<string>();
                     foreach (var kvp in plateCounts)
                     {
-                        // 如果字典里记录的次数大于1，就加上“（多次）”后缀
                         if (kvp.Value > 1)
                             carList.Add($"{kvp.Key}（多次）");
                         else
                             carList.Add(kvp.Key);
                     }
-                    string carsString = string.Join("、", carList); // 用顿号连起来
+                    string carsString = string.Join("、", carList);
 
-                    // 5. 生成最终的通报文案
-                    string reportText = $@"【关于{displayDate}校车路线偏离违规的处理通报】
+                    // 5. 动态通报文案
+                    string reportText = $@"【关于{displayDate}{typeConfig.ReportTitleTemplate}的处理通报】
 
 各位管理员，大家好：
 
-附件是{displayDate}校车运行期间的路线偏离违规处理通知书（共{pdfFiles.Length}份），请及时查收。
+附件是{displayDate}{typeConfig.ReportTitleTemplate}通知书（共{pdfFiles.Length}份），请及时查收。
 涉及车辆：{carsString}。
 请各位管理员配合跟进以下工作：
 
     将违规单下发给对应驾驶员签字确认。
 
-    核实偏离原因（如遇修路、封路等客观原因，请管理员提供证明报备）。
-
-    再次向车队强调：严禁私自更改交警审批路线。
+    {typeConfig.ReportBodyTemplate}
 
 收到请回复，并尽快落实反馈，辛苦大家！";
 
-                    // 6. 神奇的一步：直接把文案塞进电脑剪贴板
                     Clipboard.SetText(reportText);
-
-                    MessageBox.Show($"群通报文案已成功生成！\n包含 {pdfFiles.Length} 份通知单信息。\n\n已自动复制到了你的剪贴板，快去微信群里按 Ctrl+V 粘贴吧！", "生成成功", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show($"群通报文案已成功生成！\n类型：{typeConfig.DisplayName}\n包含 {pdfFiles.Length} 份通知单信息。\n\n已自动复制到剪贴板！",
+                        "生成成功", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
         }
@@ -589,7 +565,11 @@ namespace Fine
                 // 5. 生成清单
                 string[] files = Directory.GetFiles(folderPath, "*.pdf");
                 System.Text.StringBuilder resultList = new System.Text.StringBuilder();
-                resultList.AppendLine($"--- {displayDate} 内部详细归属清单 ---");
+
+                // 从文件夹名推断违规类型
+                ViolationTypeEnum detectedType = DetectViolationTypeFromFolderName(folderName);
+                var typeConfig = ViolationTypeRegistry.GetConfig(detectedType);
+                resultList.AppendLine($"--- {displayDate} {typeConfig.DisplayName} 内部详细归属清单 ---");
 
                 foreach (string file in files)
                 {
@@ -658,13 +638,20 @@ namespace Fine
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            // 调用我们的“验证门卫”
+            // 调用我们的"验证门卫"
             if (!CheckTimePassword())
             {
                 // 密码不对，直接强行关闭程序
                 Application.Exit();
             }
 
+            // 初始化违规类型下拉框（显示中文名，值绑定枚举）
+            cboViolationType.DataSource = ViolationTypeRegistry.AllConfigs;
+            cboViolationType.DisplayMember = "DisplayName";
+            cboViolationType.ValueMember = "Type";
+            cboViolationType.SelectedValue = ViolationTypeEnum.RouteDeviation;
+            cboViolationType.SelectedIndexChanged += cboViolationType_SelectedIndexChanged;
+            UpdateFormTitle();
         }
 
         private bool CheckTimePassword()
@@ -786,7 +773,11 @@ namespace Fine
                 // 5. 生成对外通报清单
                 string[] files = Directory.GetFiles(folderPath, "*.pdf");
                 System.Text.StringBuilder resultList = new System.Text.StringBuilder();
-                resultList.AppendLine($"--- {displayDate} 校车违规运行通报清单 ---");
+
+                // 从文件夹名推断违规类型
+                ViolationTypeEnum detectedTypeExt = DetectViolationTypeFromFolderName(folderName);
+                var typeConfigExt = ViolationTypeRegistry.GetConfig(detectedTypeExt);
+                resultList.AppendLine($"--- {displayDate} 校车{typeConfigExt.DisplayName}运行通报清单 ---");
 
                 foreach (string file in files)
                 {
@@ -822,7 +813,8 @@ namespace Fine
             helpText.AppendLine("?? 【全功能按键使用说明词典】\n");
 
             helpText.AppendLine("?? [读取剪贴板文字]：利用OCR识别剪贴板图片，自动抓取车牌号和违规时间。");
-            helpText.AppendLine("?? [导入模板]：初次使用或需更换格式时，选择你的处罚单Word模板。");
+            helpText.AppendLine("?? [违规类型]：下拉框选择当前处罚的违规类型，不同类型使用不同模板和独立序号。");
+            helpText.AppendLine("?? [导入模板]：初次使用或需更换格式时，为当前选中的违规类型导入专用Word模板。");
             helpText.AppendLine("?? [确认生成处罚单]：将左侧数据与证据图填入模板，生成Word处罚单。");
             helpText.AppendLine("?? [WORD转PDF]：一键批量将当天的Word处罚单转换为正式的PDF格式。");
 
@@ -987,8 +979,10 @@ namespace Fine
                 // 4. 构建支持 Excel 直接粘贴的字符串 (利用 \t 制表符自动分列)
                 System.Text.StringBuilder excelData = new System.Text.StringBuilder();
 
-                // 构建你期望的表头
-                excelData.AppendLine("序号\t车牌\t管理员\t使用学校\t路段偏离报警(次)");
+                // 构建你期望的表头 (含当前违规类型)
+                string violationTypeName = ViolationTypeRegistry.GetConfig(
+                    (ViolationTypeEnum)cboViolationType.SelectedValue).DisplayName;
+                excelData.AppendLine($"序号\t车牌\t管理员\t使用学校\t{violationTypeName}报警(次)");
 
                 int index = 1;
                 foreach (var kvp in violationCounts)
@@ -1019,6 +1013,34 @@ namespace Fine
             {
                 MessageBox.Show("读取台账时发生错误，请检查 Excel 是否正被打开占用：\n" + ex.Message, "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private void cboViolationType_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            UpdateFormTitle();
+        }
+
+        private void UpdateFormTitle()
+        {
+            if (cboViolationType.SelectedItem != null)
+            {
+                var config = ViolationTypeRegistry.GetConfig((ViolationTypeEnum)cboViolationType.SelectedValue);
+                this.Text = $"校车违规处罚单生成 - {config.DisplayName}";
+            }
+        }
+
+        /// <summary>
+        /// 从文件夹名推断违规类型
+        /// 文件夹名格式: CF-20260330冲红灯车辆违规处罚通知单
+        /// </summary>
+        private ViolationTypeEnum DetectViolationTypeFromFolderName(string folderName)
+        {
+            foreach (var config in ViolationTypeRegistry.AllConfigs)
+            {
+                if (folderName.Contains(config.DisplayName))
+                    return config.Type;
+            }
+            return ViolationTypeEnum.RouteDeviation;
         }
     }
 }
