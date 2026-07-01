@@ -20,9 +20,11 @@ namespace Fine
     public partial class Form1 : Form
     {
 
-        // === 补充一个私有变量，用来存储当前预览的图片对象 ===
-        // 把之前的 private Image currentPreviewImage; 改成下面这样：
-        private System.Drawing.Image currentPreviewImage;
+        // === 双图证据队列 ===
+        // 最多存储2张证据图片，生成处罚单时一并插入Word末尾
+        private List<System.Drawing.Image> imageQueue = new List<System.Drawing.Image>();
+        private List<string> imageTempPaths = new List<string>();
+        private const int MaxImageCount = 2;
 
         public Form1()
         {
@@ -54,38 +56,69 @@ namespace Fine
 
         private void btnLoadImagePreview_Click(object sender, EventArgs e)
         {
-            // 1. 检查剪贴板里有没有图片
-            if (Clipboard.ContainsImage())
-            {
-                // 2. [关键] 内存管理：如果预览框里已经有一张旧图，必须手动释放它！
-                // 否则程序运行一整天会慢慢变慢。
-                if (currentPreviewImage != null)
-                {
-                    currentPreviewImage.Dispose(); // 释放旧图片内存
-                    picPreview.Image = null;       // 清空控件显示
-                }
+            AddImageToQueue();
+        }
 
-                // 3. 从剪贴板拿走图片并显示
-                // 把之前的 Image originalImage = Clipboard.GetImage(); 改成：
-                System.Drawing.Image originalImage = Clipboard.GetImage();
-                currentPreviewImage = originalImage; // 存入变量管理
-                picPreview.Image = currentPreviewImage; // 填入控件显示
-            }
-            else
+        /// <summary>
+        /// 将剪贴板中的图片加入证据队列（最多2张）
+        /// </summary>
+        private void AddImageToQueue()
+        {
+            if (!Clipboard.ContainsImage())
             {
                 MessageBox.Show("剪贴板中没有图片！请先用微信按 Alt+A 截图并复制图片证据。", "提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (imageQueue.Count >= MaxImageCount)
+            {
+                MessageBox.Show($"证据图片已达上限（{MaxImageCount}张）！\n如需更换，请先点击'清空图片'按钮。", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            try
+            {
+                System.Drawing.Image newImage = Clipboard.GetImage();
+                if (newImage == null) return;
+
+                // 去重：与队列最后一张比较长宽
+                if (imageQueue.Count > 0)
+                {
+                    var lastImg = imageQueue[imageQueue.Count - 1];
+                    if (newImage.Width == lastImg.Width && newImage.Height == lastImg.Height)
+                    {
+                        newImage.Dispose();
+                        return; // 相同图片，跳过
+                    }
+                }
+
+                // 保存临时文件
+                string tempDir = Path.Combine(Path.GetTempPath(), "FineTicket");
+                if (!Directory.Exists(tempDir))
+                    Directory.CreateDirectory(tempDir);
+
+                string tempPath = Path.Combine(tempDir, $"img_{DateTime.Now:yyyyMMddHHmmss}_{imageQueue.Count + 1}.jpg");
+                newImage.Save(tempPath, System.Drawing.Imaging.ImageFormat.Jpeg);
+                imageTempPaths.Add(tempPath);
+
+                imageQueue.Add(newImage);
+
+                // 双预览框：第1张→picPreview1，第2张→picPreview2
+                UpdatePreviewBoxes();
+                UpdateImageStatusLabel();
+            }
+            catch
+            {
+                // 剪贴板偶尔被占用，静默跳过
             }
         }
 
         // ==========================================
-        // [新增] 窗口关闭时，确保释放最后一张图片的内存
+        // 窗口关闭时，释放队列中所有图片和临时文件
         // ==========================================
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
-            if (currentPreviewImage != null)
-            {
-                currentPreviewImage.Dispose();
-            }
+            ClearImageQueue();
             base.OnFormClosing(e);
         }
 
@@ -151,18 +184,24 @@ namespace Fine
                     document.ReplaceText("{{违规时间}}", alarmDateTime.ToString("yyyy年M月d日 HH:mm"));
                     document.ReplaceText("{{违规类型}}", typeConfig.DisplayName);
 
-                    // 插入预览框图片
-                    if (picPreview.Image != null)
+                    // 插入证据图片（循环插入队列中所有图片）
+                    for (int i = 0; i < imageTempPaths.Count; i++)
                     {
-                        string tempPath = Path.Combine(Path.GetTempPath(), "temp_violation.jpg");
-                        picPreview.Image.Save(tempPath, System.Drawing.Imaging.ImageFormat.Jpeg);
+                        if (System.IO.File.Exists(imageTempPaths[i]))
+                        {
+                            // 两张图之间加一个空段落分隔
+                            if (i > 0)
+                            {
+                                document.InsertParagraph();
+                            }
 
-                        Xceed.Document.NET.Image wordImage = document.AddImage(tempPath);
-                        var picture = wordImage.CreatePicture();
-                        picture.Width = 500;
-                        picture.Height = 400;
+                            Xceed.Document.NET.Image wordImage = document.AddImage(imageTempPaths[i]);
+                            var picture = wordImage.CreatePicture();
+                            picture.Width = 500;
+                            picture.Height = 400;
 
-                        document.InsertParagraph().AppendPicture(picture);
+                            document.InsertParagraph().AppendPicture(picture);
+                        }
                     }
 
                     document.SaveAs(wordPath);
@@ -294,35 +333,99 @@ namespace Fine
 
         }
 
-        // 定义一个变量，记录上一次抓到的图片，防止重复刷新导致闪烁
-        private System.Drawing.Image _lastImage;
+        /// <summary>
+        /// 清空所有证据图片（队列、临时文件、预览）
+        /// </summary>
+        private void btnClearQueue_Click(object sender, EventArgs e)
+        {
+            ClearImageQueue();
+        }
+
+        /// <summary>
+        /// 释放队列中所有图片、删除临时文件、清空预览
+        /// </summary>
+        private void ClearImageQueue()
+        {
+            // 释放所有图片对象
+            foreach (var img in imageQueue)
+            {
+                try { img.Dispose(); } catch { }
+            }
+            imageQueue.Clear();
+
+            // 删除所有临时文件
+            foreach (var path in imageTempPaths)
+            {
+                try { if (System.IO.File.Exists(path)) System.IO.File.Delete(path); } catch { }
+            }
+            imageTempPaths.Clear();
+
+            // 清空预览
+            picPreview1.Image = null;
+            picPreview2.Image = null;
+            UpdateImageStatusLabel();
+        }
+
+        /// <summary>
+        /// 更新证据图片状态标签
+        /// </summary>
+        private void UpdateImageStatusLabel()
+        {
+            lblImageQueueStatus.Text = $"已选 {imageQueue.Count}/{MaxImageCount} 张证据图";
+        }
+
+        /// <summary>
+        /// 双预览框刷新：第1张→picPreview1，第2张→picPreview2
+        /// </summary>
+        private void UpdatePreviewBoxes()
+        {
+            picPreview1.Image = imageQueue.Count >= 1 ? imageQueue[0] : null;
+            picPreview2.Image = imageQueue.Count >= 2 ? imageQueue[1] : null;
+        }
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-            // 1. 先判断剪贴板里到底有没有图，没有就直接跳过
+            // 自动监听剪贴板：有新图片时自动加入队列
             if (!Clipboard.ContainsImage())
-            {
                 return;
-            }
+
+            if (imageQueue.Count >= MaxImageCount)
+                return; // 队列已满，不再自动采集
 
             try
             {
-                // 2. 获取图片
                 System.Drawing.Image img = Clipboard.GetImage();
                 if (img == null) return;
 
-                // 3. 只有当图片真的变了，才更新预览框，防止一直刷新导致闪烁
-                // 注意：简单起见，我们直接对比图片的长宽。如果长宽变了或者还没抓过图，就更新。
-                if (_lastImage == null || img.Width != _lastImage.Width || img.Height != _lastImage.Height)
+                // 去重：与队列最后一张比较长宽
+                if (imageQueue.Count > 0)
                 {
-                    _lastImage?.Dispose(); // 释放旧内存
-                    _lastImage = img;
-                    picPreview.Image = _lastImage;
+                    var lastImg = imageQueue[imageQueue.Count - 1];
+                    if (img.Width == lastImg.Width && img.Height == lastImg.Height)
+                    {
+                        img.Dispose();
+                        return;
+                    }
                 }
+
+                // 保存临时文件
+                string tempDir = Path.Combine(Path.GetTempPath(), "FineTicket");
+                if (!Directory.Exists(tempDir))
+                    Directory.CreateDirectory(tempDir);
+
+                string tempPath = Path.Combine(tempDir, $"img_{DateTime.Now:yyyyMMddHHmmss}_{imageQueue.Count + 1}.jpg");
+                img.Save(tempPath, System.Drawing.Imaging.ImageFormat.Jpeg);
+                imageTempPaths.Add(tempPath);
+
+                imageQueue.Add(img);
+
+                // 双预览框：第1张→picPreview1，第2张→picPreview2
+                UpdatePreviewBoxes();
+                UpdateImageStatusLabel();
             }
             catch
             {
-                // 剪贴板偶尔会被其他程序占用导致读取失败，这里加个保护防止软件崩溃
+                // 剪贴板偶尔被其他程序占用导致读取失败，静默跳过
             }
         }
 

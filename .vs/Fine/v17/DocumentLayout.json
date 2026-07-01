@@ -44,9 +44,23 @@
               "RelativeDocumentMoniker": "Fine\\Form1.Designer.cs",
               "ToolTip": "D:\\code\\Project\\Fine\\Fine\\Fine\\Form1.Designer.cs",
               "RelativeToolTip": "Fine\\Form1.Designer.cs",
-              "ViewState": "AgIAAEABAAAAAAAAAAAvwFoBAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAABYAAAAAAAAAAAAvwBYAAAAIAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-03-18T03:43:00.734Z",
+              "IsPinned": true,
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Form1.cs",
+              "DocumentMoniker": "D:\\code\\Project\\Fine\\Fine\\Fine\\Form1.cs",
+              "RelativeDocumentMoniker": "Fine\\Form1.cs",
+              "ToolTip": "D:\\code\\Project\\Fine\\Fine\\Fine\\Form1.cs",
+              "RelativeToolTip": "Fine\\Form1.cs",
+              "ViewState": "AgIAAEcAAAAAAAAAAADwv/kCAAAfAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-18T03:38:48.512Z",
               "IsPinned": true,
               "EditorCaption": ""
             },
@@ -60,19 +74,6 @@
               "RelativeToolTip": "Fine\\Fine.csproj",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
               "WhenOpened": "2026-03-21T12:44:45.835Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "Form1.cs",
-              "DocumentMoniker": "D:\\code\\Project\\Fine\\Fine\\Fine\\Form1.cs",
-              "RelativeDocumentMoniker": "Fine\\Form1.cs",
-              "ToolTip": "D:\\code\\Project\\Fine\\Fine\\Fine\\Form1.cs",
-              "RelativeToolTip": "Fine\\Form1.cs",
-              "ViewState": "AgIAAMYAAAAAAAAAAAAawNUAAAAVAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-18T03:38:48.512Z",
-              "EditorCaption": ""
             },
             {
               "$type": "Document",

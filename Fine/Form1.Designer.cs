@@ -44,7 +44,10 @@
             btnGenerate = new Button();
             txtSeq = new TextBox();
             label6 = new Label();
-            picPreview = new PictureBox();
+            picPreview1 = new PictureBox();
+            picPreview2 = new PictureBox();
+            lblPreview1 = new Label();
+            lblPreview2 = new Label();
             btnShortcut = new Button();
             button5 = new Button();
             button4 = new Button();
@@ -56,9 +59,12 @@
             btnBatchOcrMatch = new Button();
             lblViolationType = new Label();
             cboViolationType = new ComboBox();
+            lblImageQueueStatus = new Label();
+            btnClearQueue = new Button();
             timer1 = new System.Windows.Forms.Timer(components);
             groupBox1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)picPreview).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)picPreview1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)picPreview2).BeginInit();
             SuspendLayout();
             // 
             // timer1
@@ -119,7 +125,6 @@
             label1.Size = new Size(82, 24);
             label1.TabIndex = 5;
             label1.Text = "车牌号：";
-            label1.Click += label1_Click;
             // 
             // label2
             // 
@@ -192,17 +197,66 @@
             label6.TabIndex = 11;
             label6.Text = "单号结尾";
             // 
-            // picPreview
+            // lblPreview1
             // 
-            picPreview.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
-            picPreview.BorderStyle = BorderStyle.FixedSingle;
-            picPreview.Location = new Point(-3, 170);
-            picPreview.Name = "picPreview";
-            picPreview.Size = new Size(696, 690);
-            picPreview.SizeMode = PictureBoxSizeMode.Zoom;
-            picPreview.TabIndex = 12;
-            picPreview.TabStop = false;
-            picPreview.Click += pictureBox1_Click;
+            lblPreview1.AutoSize = true;
+            lblPreview1.Location = new Point(10, 174);
+            lblPreview1.Name = "lblPreview1";
+            lblPreview1.Size = new Size(80, 24);
+            lblPreview1.TabIndex = 26;
+            lblPreview1.Text = "证据图 1";
+            // 
+            // lblPreview2
+            // 
+            lblPreview2.AutoSize = true;
+            lblPreview2.Location = new Point(400, 174);
+            lblPreview2.Name = "lblPreview2";
+            lblPreview2.Size = new Size(80, 24);
+            lblPreview2.TabIndex = 27;
+            lblPreview2.Text = "证据图 2";
+            // 
+            // picPreview1
+            // 
+            picPreview1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
+            picPreview1.BorderStyle = BorderStyle.FixedSingle;
+            picPreview1.Location = new Point(-3, 200);
+            picPreview1.Name = "picPreview1";
+            picPreview1.Size = new Size(390, 610);
+            picPreview1.SizeMode = PictureBoxSizeMode.Zoom;
+            picPreview1.TabIndex = 12;
+            picPreview1.TabStop = false;
+            picPreview1.Click += pictureBox1_Click;
+            // 
+            // picPreview2
+            // 
+            picPreview2.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
+            picPreview2.BorderStyle = BorderStyle.FixedSingle;
+            picPreview2.Location = new Point(395, 200);
+            picPreview2.Name = "picPreview2";
+            picPreview2.Size = new Size(298, 610);
+            picPreview2.SizeMode = PictureBoxSizeMode.Zoom;
+            picPreview2.TabIndex = 28;
+            picPreview2.TabStop = false;
+            // 
+            // lblImageQueueStatus
+            // 
+            lblImageQueueStatus.AutoSize = true;
+            lblImageQueueStatus.ForeColor = System.Drawing.Color.DarkBlue;
+            lblImageQueueStatus.Location = new Point(3, 818);
+            lblImageQueueStatus.Name = "lblImageQueueStatus";
+            lblImageQueueStatus.Size = new Size(150, 24);
+            lblImageQueueStatus.TabIndex = 24;
+            lblImageQueueStatus.Text = "已选 0/2 张证据图";
+            // 
+            // btnClearQueue
+            // 
+            btnClearQueue.Location = new Point(200, 814);
+            btnClearQueue.Name = "btnClearQueue";
+            btnClearQueue.Size = new Size(100, 34);
+            btnClearQueue.TabIndex = 25;
+            btnClearQueue.Text = "清空图片";
+            btnClearQueue.UseVisualStyleBackColor = true;
+            btnClearQueue.Click += btnClearQueue_Click;
             // 
             // btnShortcut
             // 
@@ -320,6 +374,8 @@
             Controls.Add(btnBatchOcrMatch);
             Controls.Add(cboViolationType);
             Controls.Add(lblViolationType);
+            Controls.Add(lblImageQueueStatus);
+            Controls.Add(btnClearQueue);
             Controls.Add(btnSingleMatch);
             Controls.Add(btnHelp);
             Controls.Add(btnMatchExternal);
@@ -328,7 +384,10 @@
             Controls.Add(button4);
             Controls.Add(button5);
             Controls.Add(btnShortcut);
-            Controls.Add(picPreview);
+            Controls.Add(picPreview2);
+            Controls.Add(picPreview1);
+            Controls.Add(lblPreview2);
+            Controls.Add(lblPreview1);
             Controls.Add(label6);
             Controls.Add(txtSeq);
             Controls.Add(btnGenerate);
@@ -344,7 +403,8 @@
             Text = "Form1";
             Load += Form1_Load;
             groupBox1.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)picPreview).EndInit();
+            ((System.ComponentModel.ISupportInitialize)picPreview1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)picPreview2).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -365,7 +425,10 @@
         private Button btnGenerate;
         private TextBox txtSeq;
         private Label label6;
-        private PictureBox picPreview;
+        private PictureBox picPreview1;
+        private PictureBox picPreview2;
+        private Label lblPreview1;
+        private Label lblPreview2;
         private System.Windows.Forms.Timer timer1;
         private Button btnShortcut;
         private Button button5;
@@ -378,5 +441,7 @@
         private Button btnBatchOcrMatch;
         private Label lblViolationType;
         private ComboBox cboViolationType;
+        private Label lblImageQueueStatus;
+        private Button btnClearQueue;
     }
 }
